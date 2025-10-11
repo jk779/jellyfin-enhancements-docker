@@ -1,0 +1,48 @@
+services:
+  jellyfin:
+    image: jellyfin/jellyfin
+    container_name: jellyfin
+    expose: ["8096"]
+    # ports:
+    #   - 8096:8096/tcp
+    #   - 7359:7359/udp
+    volumes:
+      - jellyfin_config:/config
+      - jellyfin_cache:/cache
+      - type: bind
+        source: /Volumes/share
+        target: /media
+        read_only: true
+    restart: 'no'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+
+  jellyfin-caddy:
+    build:
+      context: .
+      dockerfile: Dockerfile.caddy
+    container_name: jellyfin-caddy
+    depends_on:
+      - jellyfin
+    ports:
+      - "8096:8096"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./qualitytags.js:/srv/qualitytags.js:ro
+      - ./log-viewer-inject.js:/srv/log-viewer-inject.js:ro
+    restart: 'no'
+
+  # nginx:
+  #   image: nginx:stable
+  #   container_name: jellyfin-nginx
+  #   depends_on: [jellyfin]
+  #   ports:
+  #     - "8096:8096"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./qualitytags.js:/srv/qualitytags.js:ro
+  #   restart: 'no'
+
+volumes:
+  jellyfin_config:
+  jellyfin_cache:

@@ -1,0 +1,26 @@
+{
+	order replace after reverse_proxy
+	order replace before encode
+}
+
+:8096 {
+  @injected path /qualitytags.js /log-viewer-inject.js
+  handle @injected {
+    root * /srv
+    header {
+      Content-Type application/javascript
+      Cache-Control "public, max-age=3600"
+    }
+    file_server
+  }
+
+	reverse_proxy jellyfin:8096 {
+		header_up Accept-Encoding identity
+	}
+
+	# Match Jellyfin web entrypoints
+	@jellyweb path /web/ /web/index.html
+	replace @jellyweb {
+		re "(?i)</body>" "<script defer src=\"/qualitytags.js\"></script><script defer src=\"/log-viewer-inject.js\"></script></body>"
+	}
+}
