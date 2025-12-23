@@ -1,7 +1,6 @@
 services:
   jellyfin:
     image: jellyfin/jellyfin
-    container_name: jellyfin
     expose: ["8096"]
     # ports:
     #   - 8096:8096/tcp
@@ -21,12 +20,7 @@ services:
       - 'host.docker.internal:host-gateway'
 
   jellyfin-caddy:
-    build:
-      context: .
-      dockerfile: Dockerfile.caddy
-    container_name: jellyfin-caddy
-    depends_on:
-      - jellyfin
+    image: ghcr.io/jk779/jellyfin-enhancements-docker:latest
     ports:
       - "8096:8096"
     volumes:
@@ -34,7 +28,6 @@ services:
       - ./qualitytags.js:/srv/qualitytags.js:ro
       - ./log-viewer-inject.js:/srv/log-viewer-inject.js:ro
     restart: 'unless-stopped'
-
 
 volumes:
   jellyfin_config:

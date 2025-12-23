@@ -3,6 +3,9 @@ name: Build & Push Docker image
 on:
   push:
     branches: [ main ]
+    paths:
+      - Dockerfile.caddy
+      - .github/workflows/**
   workflow_dispatch:
 
 jobs:
