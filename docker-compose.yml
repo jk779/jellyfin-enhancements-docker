@@ -16,7 +16,7 @@ services:
     environment:
       - JELLYFIN_FFmpeg__analyzeduration=16M
       - JELLYFIN_FFmpeg__probesize=32M
-    restart: 'no'
+    restart: 'unless-stopped'
     extra_hosts:
       - 'host.docker.internal:host-gateway'
 
@@ -33,18 +33,9 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - ./qualitytags.js:/srv/qualitytags.js:ro
       - ./log-viewer-inject.js:/srv/log-viewer-inject.js:ro
-    restart: 'no'
+      # old version - ./log-viewer-inject-onpage.js:/srv/log-viewer-inject.js:ro
+    restart: 'unless-stopped'
 
-  # nginx:
-  #   image: nginx:stable
-  #   container_name: jellyfin-nginx
-  #   depends_on: [jellyfin]
-  #   ports:
-  #     - "8096:8096"
-  #   volumes:
-  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
-  #     - ./qualitytags.js:/srv/qualitytags.js:ro
-  #   restart: 'no'
 
 volumes:
   jellyfin_config:

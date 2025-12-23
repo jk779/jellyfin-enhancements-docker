@@ -88,11 +88,11 @@
   }
 
   function findSaveButton() {
-    // Ziel: <button is="emby-button" class="raised button-submit block emby-button"><span>Save</span></button>
-    // Je nach Theme/Locale kann der Text variieren; wir matchen bevorzugt Rolle/Klassen.
+    // Target: <button is="emby-button" class="raised button-submit block emby-button"><span>Save</span></button>
+    // Depending on theme/locale the text may vary; we primarily match role/classes.
     const candidates = Array.from(document.querySelectorAll('button.emby-button.button-submit'));
     if (!candidates.length) return null;
-    // Falls mehrere, nimm den ersten sichtbaren
+    // If there are multiple, take the first visible one
     return candidates.find(b => b.offsetParent !== null) || candidates[0];
   }
 
@@ -108,7 +108,7 @@
       btn = document.createElement('button');
       btn.id = BTN_ID;
       btn.type = 'button';
-      // gleiche Klassen wie Save:
+      // Same classes as Save:
       btn.setAttribute('is', 'emby-button');
       btn.className = 'raised button-submit block emby-button';
       btn.innerHTML = '<span>Live Tail</span>';
@@ -116,14 +116,14 @@
         togglePanel();
       });
 
-      // hinter dem Save-Button einfügen
+      // Insert after the Save button
       if (saveBtn.parentElement) {
         saveBtn.parentElement.insertBefore(btn, saveBtn.nextSibling);
       } else {
         saveBtn.insertAdjacentElement('afterend', btn);
       }
     } else {
-      // sicherstellen, dass er nach Save sitzt (Renderwechsel)
+      // Ensure it sits after Save (render changes)
       if (btn.previousElementSibling !== saveBtn) {
         saveBtn.parentElement?.insertBefore(btn, saveBtn.nextSibling);
       }
@@ -135,10 +135,10 @@
     if (!wrap) {
       wrap = document.createElement('div');
       wrap.id = WRAP_ID;
-      // unterhalb des Button-Containers einhängen:
+      // Attach below the button container:
       const saveBtn = findSaveButton();
       if (saveBtn) {
-        // gehe zum Container (oft der Form/Toolbar-Container)
+        // Move to the container (often the form/toolbar container)
         const container = saveBtn.parentElement || saveBtn.closest('div') || document.body;
         container.insertAdjacentElement('afterend', wrap);
       } else {
@@ -196,7 +196,7 @@
     if (active) return;
     const url = getCurrentLogUrl();
     if (!url) {
-      // ggf. ist die Liste noch nicht gerendert; nicht aggressiv pollen
+      // The list may not be rendered yet; do not poll aggressively
       const body = $(`${PANEL_ID}-body`);
       if (body) body.textContent = '(no log link found yet)';
       return;
@@ -252,7 +252,7 @@
     }
   }
 
-  // Wenn der User auf einen anderen Log-Link klickt, Ziel aktualisieren
+  // When the user clicks another log link, update the target
   document.addEventListener('click', (ev) => {
     const a = ev.target.closest && ev.target.closest('a[href*="/System/Logs/Log?name="]');
     if (!a) return;
@@ -271,22 +271,22 @@
     }, 150);
   }, true);
 
-  // Sichtbarkeit/Einbettung steuern
+  // Control visibility/embedding
   function tick() {
     if (!onLogsPage()) {
       removeInline();
       return;
     }
     ensureInlineButton();
-    // panel im Flow halten, falls DOM neu gerendert wurde
+    // Keep panel in flow in case the DOM was re-rendered
     if ($(PANEL_ID) && !$(WRAP_ID)) {
-      // wurde weggeräumt – neu anlegen
+      // It was removed — recreate
       ensureWrapAndPanel();
     }
   }
 
   window.addEventListener('hashchange', tick);
-  setInterval(tick, 1000); // leichter heartbeat, keine schweren Observer
+  setInterval(tick, 1000); // light heartbeat, no heavy observers
 
   // init
   if (document.readyState === 'loading') {
