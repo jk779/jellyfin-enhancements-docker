@@ -13,6 +13,9 @@ services:
         source: /Volumes/share
         target: /media
         read_only: true
+    environment:
+      - JELLYFIN_FFmpeg__analyzeduration=16M
+      - JELLYFIN_FFmpeg__probesize=32M
     restart: 'no'
     extra_hosts:
       - 'host.docker.internal:host-gateway'
