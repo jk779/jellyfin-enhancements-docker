@@ -33,7 +33,6 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - ./qualitytags.js:/srv/qualitytags.js:ro
       - ./log-viewer-inject.js:/srv/log-viewer-inject.js:ro
-      # old version - ./log-viewer-inject-onpage.js:/srv/log-viewer-inject.js:ro
     restart: 'unless-stopped'
 
 
