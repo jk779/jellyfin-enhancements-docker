@@ -23,9 +23,10 @@ services:
     image: ghcr.io/jk779/jellyfin-enhancements-docker:latest
     ports:
       - "8096:8096"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - ./inject:/srv/inject:ro
+    # only overwrite these if you want to change the config on the fly
+    # volumes:
+    #   - ./Caddyfile:/etc/caddy/Caddyfile
+    #   - ./inject:/srv/inject:ro
     restart: 'unless-stopped'
 
 volumes:
