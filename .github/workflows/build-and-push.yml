@@ -6,6 +6,8 @@ on:
     paths:
       - Dockerfile.caddy
       - .github/workflows/**
+      - Caddyfile
+      - inject/**
   workflow_dispatch:
 
 jobs:
