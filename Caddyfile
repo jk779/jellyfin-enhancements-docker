@@ -4,13 +4,7 @@
 }
 
 :8096 {
-  @injected path \
-    /frontend-search-filters.js \
-    /log-viewer-inject.js \
-    /native-right-click-title.js \
-    /qualitytags.js \
-    /search-flex-wrap.js \
-    /search-input-maxlength.js
+  @injected path /inject/*
 
   handle @injected {
     root * /srv
@@ -29,12 +23,12 @@
   @jellyweb path /web/ /web/index.html
   replace @jellyweb {
     re "(?i)</body>" "\
-        <script defer src=\"/frontend-search-filters.js\"></script>\
-        <script defer src=\"/log-viewer-inject.js\"></script>\
-        <script defer src=\"/native-right-click-title.js\"></script>\
-        <script defer src=\"/qualitytags.js\"></script>\
-        <script defer src=\"/search-flex-wrap.js\"></script>\
-        <script defer src=\"/search-input-maxlength.js\"></script>\
-      </body>"
+<script defer src=\"/inject/frontend-search-filters.js\"></script>\
+<script defer src=\"/inject/log-viewer-inject.js\"></script>\
+<script defer src=\"/inject/native-right-click-title.js\"></script>\
+<script defer src=\"/inject/qualitytags.js\"></script>\
+<script defer src=\"/inject/search-flex-wrap.js\"></script>\
+<script defer src=\"/inject/search-input-maxlength.js\"></script>\
+</body>"
   }
 }
