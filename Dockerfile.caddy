@@ -1,5 +1,8 @@
 FROM caddy:latest
 
+COPY Caddyfile /etc/caddy/Caddyfile
+COPY inject /srv/inject
+
 RUN set -eux; \
   arch="$(uname -m)"; \
   case "$arch" in \
