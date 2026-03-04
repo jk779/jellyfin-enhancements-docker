@@ -1,10 +1,17 @@
 {
-	order replace after reverse_proxy
-	order replace before encode
+  order replace after reverse_proxy
+  order replace before encode
 }
 
 :8096 {
-  @injected path /qualitytags.js /log-viewer-inject.js
+  @injected path \
+    /frontend-search-filters.js \
+    /log-viewer-inject.js \
+    /native-right-click-title.js \
+    /qualitytags.js \
+    /search-flex-wrap.js \
+    /search-input-maxlength.js
+
   handle @injected {
     root * /srv
     header {
@@ -14,13 +21,20 @@
     file_server
   }
 
-	reverse_proxy jellyfin:8096 {
-		header_up Accept-Encoding identity
-	}
+  reverse_proxy jellyfin:8096 {
+    header_up Accept-Encoding identity
+  }
 
-	# Match Jellyfin web entrypoints
-	@jellyweb path /web/ /web/index.html
-	replace @jellyweb {
-		re "(?i)</body>" "<script defer src=\"/qualitytags.js\"></script><script defer src=\"/log-viewer-inject.js\"></script></body>"
-	}
+  # Match Jellyfin web entrypoints
+  @jellyweb path /web/ /web/index.html
+  replace @jellyweb {
+    re "(?i)</body>" "\
+        <script defer src=\"/frontend-search-filters.js\"></script>\
+        <script defer src=\"/log-viewer-inject.js\"></script>\
+        <script defer src=\"/native-right-click-title.js\"></script>\
+        <script defer src=\"/qualitytags.js\"></script>\
+        <script defer src=\"/search-flex-wrap.js\"></script>\
+        <script defer src=\"/search-input-maxlength.js\"></script>\
+      </body>"
+  }
 }
