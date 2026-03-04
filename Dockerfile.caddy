@@ -1,7 +1,13 @@
-# Build Caddy with the replace_response module
-FROM caddy:builder AS builder
-RUN xcaddy build \
-  --with github.com/caddyserver/replace-response
-
 FROM caddy:latest
-COPY --from=builder /usr/bin/caddy /usr/bin/caddy
+
+RUN set -eux; \
+  arch="$(uname -m)"; \
+  case "$arch" in \
+    x86_64)  goarch=amd64 ;; \
+    aarch64) goarch=arm64 ;; \
+    *) echo "unsupported arch: $arch" >&2; exit 1 ;; \
+  esac; \
+  curl -fsSL -o /usr/bin/caddy \
+    "https://caddyserver.com/api/download?os=linux&arch=${goarch}&p=github.com/caddyserver/replace-response"; \
+  chmod +x /usr/bin/caddy; \
+  caddy version
