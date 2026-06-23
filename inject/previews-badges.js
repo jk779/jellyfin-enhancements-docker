@@ -84,7 +84,7 @@
         background: rgba(0, 0, 0, 0.75);
         color: #fff;
         padding: 1px 5px;
-        font-size: 11px;
+        font-size: 12px;
         font-weight: bold;
         line-height: 1.4;
         border-radius: 3px;
