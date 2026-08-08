@@ -23,14 +23,85 @@
     return badge;
   }
 
-  function getOrientationLabel(mediaStream) {
+  // Parses Jellyfin AspectRatio values such as:
+  // "16:9", "9:16", "135:239", "1.7778", etc.
+  function parseAspectRatio(value) {
+    if (value == null) return null;
+
+    if (typeof value === 'number') {
+      return Number.isFinite(value) && value > 0 ? value : null;
+    }
+
+    const str = String(value).trim();
+    if (!str) return null;
+
+    // Ratio notation: 16:9 or 16/9
+    const match = str.match(
+      /^([0-9]+(?:\.[0-9]+)?)\s*[:/]\s*([0-9]+(?:\.[0-9]+)?)$/
+    );
+
+    if (match) {
+      const a = Number(match[1]);
+      const b = Number(match[2]);
+
+      if (a > 0 && b > 0) {
+        return a / b;
+      }
+
+      return null;
+    }
+
+    // Decimal notation: 1.7778
+    const numeric = Number(str);
+
+    return Number.isFinite(numeric) && numeric > 0
+      ? numeric
+      : null;
+  }
+
+  function getDisplayAspectRatio(mediaStream) {
     if (!mediaStream) return null;
-    const w = Number(mediaStream.Width) || 0;
-    const h = Number(mediaStream.Height) || 0;
-    if (!w || !h) return null;
-    const ratio = w / h;
+
+    // Prefer Jellyfin's display aspect ratio.
+    // This correctly handles anamorphic/non-square-pixel video.
+    let ratio = parseAspectRatio(mediaStream.AspectRatio);
+
+    // Fallback for files where Jellyfin doesn't provide AspectRatio.
+    if (!ratio) {
+      const w = Number(mediaStream.Width) || 0;
+      const h = Number(mediaStream.Height) || 0;
+
+      if (!w || !h) return null;
+
+      ratio = w / h;
+    }
+
+    // Rotation metadata is independent of the encoded width/height and DAR.
+    // For 90° / 270° rotation, displayed width and height are swapped.
+    const rotation = Number(mediaStream.Rotation);
+
+    if (Number.isFinite(rotation)) {
+      const normalizedRotation = ((rotation % 360) + 360) % 360;
+
+      if (
+        Math.abs(normalizedRotation - 90) < 1 ||
+        Math.abs(normalizedRotation - 270) < 1
+      ) {
+        ratio = 1 / ratio;
+      }
+    }
+
+    return ratio;
+  }
+
+  function getOrientationLabel(mediaStream) {
+    const ratio = getDisplayAspectRatio(mediaStream);
+
+    if (!ratio) return null;
+
     if (ratio >= 1.1) return HORZ_LABEL;
     if (ratio <= 0.9) return VERT_LABEL;
+
     return SQUARE_LABEL;
   }
 
@@ -131,6 +202,7 @@
 
     return origFetch.call(this, patchedInput, init).then(response => {
       const clone = response.clone();
+
       clone.json().then(data => {
         for (const item of data.Items ?? []) {
           if (qualityOverlayCache[item.Id]) continue;
@@ -141,7 +213,11 @@
           const runtime = formatRuntime(item.RunTimeTicks);
 
           if (quality) {
-            qualityOverlayCache[item.Id] = { quality, orientation, runtime };
+            qualityOverlayCache[item.Id] = {
+              quality,
+              orientation,
+              runtime
+            };
           }
         }
       }).catch(() => {});
@@ -173,6 +249,7 @@
           (orientation === HORZ_LABEL) ? 'orientation-badge horz' :
           (orientation === VERT_LABEL) ? 'orientation-badge vert' :
                                          'orientation-badge square';
+
         stack.appendChild(createLabel(orientation, cls));
       }
     }
@@ -186,6 +263,7 @@
     if (getComputedStyle(container).position === 'static') {
       container.style.position = 'relative';
     }
+
     container.appendChild(overlay);
   }
 
@@ -196,6 +274,7 @@
   const intersectionObserver = new IntersectionObserver(entries => {
     for (const entry of entries) {
       const el = entry.target;
+
       if (!entry.isIntersecting || !el.href) continue;
       if (observedElements.has(el)) continue;
 
@@ -203,15 +282,24 @@
       if (!match) continue;
 
       const itemId = match[1];
+
       observedElements.add(el);
       intersectionObserver.unobserve(el);
 
       const cached = qualityOverlayCache[itemId];
+
       if (cached) {
-        insertOverlay(el, cached.quality, cached.orientation, cached.runtime);
+        insertOverlay(
+          el,
+          cached.quality,
+          cached.orientation,
+          cached.runtime
+        );
       } else {
-        // Cache miss: item was not part of the intercepted batch (different endpoint).
-        // Tracked here for potential future use; no extra API call is made.
+        // Cache miss: item was not part of the intercepted batch
+        // (different endpoint).
+        // Tracked here for potential future use;
+        // no extra API call is made.
         seenItems.add(itemId);
       }
     }
@@ -226,12 +314,17 @@
   }
 
   let mutationTimeout;
+
   const mutationObserver = new MutationObserver(() => {
     clearTimeout(mutationTimeout);
     mutationTimeout = setTimeout(scanCards, 300);
   });
 
   addStyles();
-  mutationObserver.observe(document.body, { childList: true, subtree: true });
+  mutationObserver.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+
   scanCards();
 })();
