@@ -29,6 +29,7 @@
 <script defer src="/inject/previews-badges.js"></script>
 <script defer src="/inject/search-flex-wrap.js"></script>
 <script defer src="/inject/search-input-maxlength.js"></script>
+<script defer src="/inject/search-limit.js"></script>
 </body>`
   }
 }
