@@ -23,7 +23,7 @@
   @jellyweb path /web/ /web/index.html
   replace @jellyweb {
     re "(?i)</body>" `
-<script defer src="/inject/frontend-search-filters.js"></script>
+<!-- script defer src="/inject/frontend-search-filters.js"></script -->
 <script defer src="/inject/log-viewer-inject.js"></script>
 <script defer src="/inject/native-right-click-title.js"></script>
 <script defer src="/inject/previews-badges.js"></script>
