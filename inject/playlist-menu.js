@@ -1,4 +1,4 @@
-// Jellyfin 10.11 injected playlist enhancement:
+// Jellyfin injected playlist enhancement:
 // - Replaces the item Add-to-playlist dialog with a checked, toggleable popover.
 // - Adds the same playlist popover to the video player through a bookmark button.
 // - Keeps the native playlist editor available as an exact English fallback row.
@@ -140,9 +140,15 @@
   async function apiRequest(path, { method = "GET", params = [], body } = {}) {
     const token = getAccessToken();
     const headers = {};
-    if (token) {
-      headers["X-Emby-Authorization"] =
-        `MediaBrowser Client="InjectedPlaylist", Device="Browser", DeviceId="injected-playlist", Version="1.0", Token="${token}"`;
+    const api = getApiClient();
+    try {
+      // Jellyfin 12 expects the same standard Authorization header used by its
+      // web client.  Keeping this on ApiClient also preserves its current
+      // client, device, and version identifiers across web-client upgrades.
+      if (typeof api?.setRequestHeaders === "function") api.setRequestHeaders(headers);
+    } catch {}
+    if (token && !headers.Authorization) {
+      headers.Authorization = `MediaBrowser Token="${token}"`;
     }
     if (body !== undefined) headers["Content-Type"] = "application/json";
     const response = await fetch(makeApiUrl(path, params), {

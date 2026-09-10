@@ -1,4 +1,4 @@
-// Jellyfin 10.11 injected playback navigation enhancement:
+// Jellyfin injected playback navigation enhancement:
 // capture the ordered visible video cards when a direct play action starts, then
 // expose previous/next controls in the player while preserving native queues.
 (() => {
@@ -14,6 +14,10 @@
   let scheduledPlayerRefresh = false;
   let webpackRequire = null;
   let playbackApi = null;
+  let boundVideo = null;
+  let boundVideoReset = null;
+  let playRequestInFlight = false;
+  let lastEndedKey = null;
 
   function addStyles() {
     const style = document.createElement("style");
@@ -134,6 +138,12 @@
     const roots = [...document.querySelectorAll('.videoOsdBottom-maincontrols')];
     if (roots.some(root => !root.classList.contains("hide") && root.querySelector('.btnNextTrack:not(.hide), .btnPreviousTrack:not(.hide)'))) return true;
     try {
+      const manager = api?._playQueueManager;
+      const playlist = manager?.getPlaylist?.();
+      if (Array.isArray(playlist) && playlist.length > 1) return true;
+      if (Array.isArray(manager?._playlist) && manager._playlist.length > 1) return true;
+    } catch {}
+    try {
       const playlist = api?.getPlaylist?.();
       return Array.isArray(playlist) && playlist.length > 1;
     } catch {
@@ -149,22 +159,86 @@
     setTimeout(() => toast.remove(), 3500);
   }
 
+  function isRepeatOneActive(api = findPlaybackApi()) {
+    try {
+      if (api?.getPlayerState?.()?.PlayState?.RepeatMode === "RepeatOne") return true;
+    } catch {}
+    try {
+      return api?._playQueueManager?.getRepeatMode?.() === "RepeatOne";
+    } catch {
+      return false;
+    }
+  }
+
   async function playContextItem(context, index) {
     const api = findPlaybackApi();
-    if (nativeQueueIsActive(api)) return;
+    if (nativeQueueIsActive(api) || playRequestInFlight) return false;
     const id = context.ids[index];
     if (!id || !api?.play) {
       showToast("Next/previous playback is unavailable for this item.");
-      return;
+      return false;
     }
     context.index = index;
     saveContext(context);
+    playRequestInFlight = true;
     try {
       await api.play({ serverId: context.serverId, ids: [id], fullscreen: true, startPositionTicks: 0 });
+      return true;
     } catch (error) {
       console.error("[InjectedPlayerNavigation] failed to play adjacent item", error);
       showToast("The next/previous video could not be started.");
+      return false;
+    } finally {
+      playRequestInFlight = false;
     }
+  }
+
+  function endedKey(video, item) {
+    return `${item?.id || ""}|${video.currentSrc || video.src || ""}`;
+  }
+
+  async function handleVideoEnded(event) {
+    const video = event.currentTarget;
+    if (video !== boundVideo || !video.ended || video.error || playRequestInFlight) return;
+    if (!video.currentSrc && !video.src) return;
+    if (!Number.isFinite(video.duration) || video.duration <= 0) return;
+    const api = findPlaybackApi();
+    if (isRepeatOneActive(api) || nativeQueueIsActive(api)) return;
+    if (!api?.play) return;
+    const context = loadContext();
+    const item = currentPlayerItem();
+    if (!context || !item) return;
+    const key = endedKey(video, item);
+    if (lastEndedKey === key) return;
+    const index = context.ids.indexOf(item.id);
+    const target = index + 1;
+    if (index < 0 || target >= context.ids.length) return;
+    // Jellyfin's regular ended handler can tear down this video before a
+    // bubble listener gets to inspect it.  For a custom-context transition,
+    // capture the event first and let playContextItem replace the player.
+    event.stopImmediatePropagation();
+    lastEndedKey = key;
+    await playContextItem(context, target);
+  }
+
+  function syncVideoEndedListener() {
+    const video = document.querySelector("video.htmlvideoplayer");
+    if (video === boundVideo) return;
+    if (boundVideo) {
+      boundVideo.removeEventListener("ended", handleVideoEnded, true);
+      if (boundVideoReset) {
+        boundVideo.removeEventListener("loadedmetadata", boundVideoReset);
+        boundVideo.removeEventListener("play", boundVideoReset);
+      }
+    }
+    boundVideo = video || null;
+    boundVideoReset = null;
+    lastEndedKey = null;
+    if (!boundVideo) return;
+    boundVideoReset = () => { lastEndedKey = null; };
+    boundVideo.addEventListener("ended", handleVideoEnded, true);
+    boundVideo.addEventListener("loadedmetadata", boundVideoReset);
+    boundVideo.addEventListener("play", boundVideoReset);
   }
 
   function setHidden(element, hidden) {
@@ -226,6 +300,7 @@
 
   function refreshPlayer() {
     scheduledPlayerRefresh = false;
+    syncVideoEndedListener();
     for (const root of document.querySelectorAll('.videoOsdBottom-maincontrols')) patchPlayerRoot(root);
   }
 
