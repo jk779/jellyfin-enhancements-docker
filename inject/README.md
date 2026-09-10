@@ -6,4 +6,6 @@ Playlist membership is read from every accessible playlist page. Additions use t
 
 `player-navigation.js` adds previous/next controls after a direct play action captures the current visible, non-filtered video cards. It also starts the next captured item when the active video naturally ends, unless Repeat One or a native queue is active. It does not wrap and stays hidden when Jellyfin exposes a native queue, shuffle playlist, or no compatible playback manager. The context is session-scoped and expires after 30 minutes. The controls depend on Jellyfin's current webpack playback manager and may need adjustment after a major web-client update.
 
-Both scripts are loaded by the Caddy HTML replacement. Rebuild the Caddy image and reload the Jellyfin web app after changing them.
+`touch-thumbnail-play.js` sends a normal touch tap on a video thumbnail to Jellyfin's existing play/resume button. It only handles a short, stationary touch pointer gesture on a video thumbnail; mouse, keyboard, title, folder, and card-control interactions retain their native behavior. The thumbnail details link therefore remains available for desktop users.
+
+These scripts are loaded by the Caddy HTML replacement. Rebuild the Caddy image and reload the Jellyfin web app after changing them.

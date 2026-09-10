@@ -51,6 +51,12 @@ explicitly requested. Prefer separate injection files for independent features.
   `.cardText` block; `.cardText-secondary` is not reliably present. Preserve the
   title block, consistent card height, and non-video cards. Do not edit server
   metadata to hide the year.
+- `touch-thumbnail-play.js`: sends a short, stationary primary touch tap on a
+  video thumbnail to Jellyfin's existing play/resume button. It uses actual
+  touch pointer events, excludes nested controls, titles, folders, scrolling,
+  long-press gestures, and modified input, and keeps mouse/keyboard details
+  navigation native. Its legacy touch fallback must remain capture-phase and
+  non-passive so it can suppress the generated details click.
 - `orientation-filter.js`: horizontal/vertical filtering for library and search
   cards. Coordinate with the orientation badges in `previews-badges.js` and
   preserve the `.tm-orientation-hidden` contract used by navigation.
