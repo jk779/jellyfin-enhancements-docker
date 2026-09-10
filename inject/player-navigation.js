@@ -18,7 +18,6 @@
   let boundVideoReset = null;
   let playRequestInFlight = false;
   let lastEndedKey = null;
-  const heldShortcutKeys = new Set();
 
   function addStyles() {
     const style = document.createElement("style");
@@ -64,7 +63,7 @@
     const active = roots.find(root => !root.classList.contains("hide") && root.querySelector('.btnUserRating[data-id]')) || roots.find(root => root.querySelector('.btnUserRating[data-id]'));
     const button = active?.querySelector('.btnUserRating[data-id]');
     if (button?.dataset?.id) return { id: button.dataset.id, serverId: button.dataset.serverid || getServerId() };
-    const poster = document.querySelector("video.htmlvideoplayer")?.getAttribute("poster") || "";
+    const poster = activePlayerVideo()?.getAttribute("poster") || "";
     const match = poster.match(/\/Items\/([^/]+)/i);
     return match ? { id: match[1], serverId: getServerId() } : null;
   }
@@ -261,13 +260,7 @@
     button.addEventListener("click", event => {
       event.preventDefault();
       event.stopPropagation();
-      const context = loadContext();
-      const item = currentPlayerItem();
-      const api = findPlaybackApi();
-      if (!context || !item || !api?.play || nativeQueueIsActive(api)) return;
-      const index = context.ids.indexOf(item.id);
-      const target = direction === "previous" ? index - 1 : index + 1;
-      if (target >= 0 && target < context.ids.length) playContextItem(context, target);
+      navigate(direction);
     });
     return button;
   }
@@ -312,9 +305,13 @@
   }
 
   function isVisible(element) {
-    if (!element || element.hidden || element.classList.contains("hide")) return false;
-    const style = getComputedStyle(element);
-    return style.display !== "none" && style.visibility !== "hidden";
+    if (!element || !element.isConnected || element.hidden) return false;
+    for (let current = element; current; current = current.parentElement) {
+      if (current.hidden || current.classList.contains("hide")) return false;
+      const style = getComputedStyle(current);
+      if (style.display === "none" || style.visibility === "hidden") return false;
+    }
+    return true;
   }
 
   function isEditableTarget(target) {
@@ -329,20 +326,12 @@
     return false;
   }
 
-  function activePlayerRoot() {
-    const video = document.querySelector("video.htmlvideoplayer");
-    if (!isVisible(video)) return null;
-    return [...document.querySelectorAll(".videoOsdBottom-maincontrols")]
-      .find(root => !root.classList.contains("hide") && root.querySelector(".btnUserRating[data-id]")) || null;
+  function activePlayerVideo() {
+    return [...document.querySelectorAll("video.htmlvideoplayer")].find(isVisible) || null;
   }
 
-  function shortcutButton(direction) {
-    const root = activePlayerRoot();
-    if (!root) return null;
-
-    const button = root.querySelector(`.tm-video-nav.tm-video-${direction}`);
-    if (!button || button.disabled || !isVisible(button) || playRequestInFlight) return null;
-
+  function navigationTarget(direction) {
+    if (playRequestInFlight) return null;
     const context = loadContext();
     const item = currentPlayerItem();
     const api = findPlaybackApi();
@@ -351,7 +340,14 @@
     const currentIndex = context.ids.indexOf(item.id);
     const target = direction === "previous" ? currentIndex - 1 : currentIndex + 1;
     if (target < 0 || target >= context.ids.length) return null;
-    return button;
+    return { context, target };
+  }
+
+  function navigate(direction) {
+    const target = navigationTarget(direction);
+    if (!target) return false;
+    void playContextItem(target.context, target.target);
+    return true;
   }
 
   function shortcutKey(event) {
@@ -361,32 +357,20 @@
 
   function handleShortcutKeydown(event) {
     const key = shortcutKey(event);
-    if (!key || heldShortcutKeys.has(key) || event.repeat) return;
-    heldShortcutKeys.add(key);
-
+    if (!key || event.repeat) return;
     if (event.defaultPrevented || event.isComposing || event.ctrlKey || event.metaKey || event.altKey || isEditableTarget(event.target)) return;
 
-    const button = shortcutButton(key === "p" ? "previous" : "next");
-    if (!button) return;
-
+    // The OSD hides its controls after a short delay, but the video can still
+    // be the active player.  Keyboard navigation must not depend on the OSD.
+    if (!activePlayerVideo()) return;
+    const direction = key === "p" ? "previous" : "next";
     const requestWasInFlight = playRequestInFlight;
-    try {
-      // Use the same custom control as a pointer click so context, queue, and
-      // boundary handling stay in one place.
-      button.click();
-    } catch (error) {
-      console.warn("[InjectedPlayerNavigation] keyboard navigation failed", error);
-      return;
-    }
+    if (!navigate(direction)) return;
+
     if (!requestWasInFlight && playRequestInFlight) {
       event.preventDefault();
       event.stopImmediatePropagation();
     }
-  }
-
-  function handleShortcutKeyup(event) {
-    const key = shortcutKey(event);
-    if (key) heldShortcutKeys.delete(key);
   }
 
   function itemFromCard(card) {
@@ -405,8 +389,6 @@
     if (target.closest('.btnPlayAll, .btnShuffle, [data-id="playallfromhere"]')) clearContext();
   }, true);
   document.addEventListener("keydown", handleShortcutKeydown, true);
-  document.addEventListener("keyup", handleShortcutKeyup, true);
-  window.addEventListener("blur", () => heldShortcutKeys.clear());
 
   const observer = new MutationObserver(mutations => {
     if (mutations.some(mutation => mutation.type === "childList" || mutation.attributeName === "class" || mutation.attributeName === "data-id")) schedulePlayerRefresh();
