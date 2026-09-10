@@ -67,10 +67,17 @@ explicitly requested. Prefer separate injection files for independent features.
 ## Proportionate verification
 
 Run `node --check inject/<changed-script>.js` and `git diff --check` for script
-changes. For browser-sensitive behavior, perform one focused smoke test using
-the actual changed code. Reloading the live site alone does not load local edits.
-Temporary browser injection is useful before deployment; disclose changes left
-in the tab. Coordinate browser ownership when multiple agents are involved.
+changes. When runtime verification is warranted, inject the actual changed code
+into the real Jellyfin page for one focused browser check. Reloading the live
+site alone does not load local edits. Disclose temporary changes left in the tab
+and coordinate browser ownership when multiple agents are involved.
+
+Do not create temporary test apps, mock Jellyfin pages, isolated browser harnesses,
+or local test servers to validate injections unless the user explicitly requests
+them. Do not substitute a simulated application for the actual Jellyfin page.
+If the user says they will test on their device, stop browser testing and do only
+the small static checks and code review warranted by the change. These limits
+also apply to delegated agents.
 
 For playback changes, cover the specific affected transitions: natural end,
 Repeat One, last item, and native queue precedence. Do not claim a syntax check

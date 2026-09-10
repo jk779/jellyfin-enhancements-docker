@@ -364,7 +364,7 @@
     if (!key || heldShortcutKeys.has(key) || event.repeat) return;
     heldShortcutKeys.add(key);
 
-    if (event.defaultPrevented || event.isComposing || isModified(event) || isEditableTarget(event.target)) return;
+    if (event.defaultPrevented || event.isComposing || event.ctrlKey || event.metaKey || event.altKey || isEditableTarget(event.target)) return;
 
     const button = shortcutButton(key === "p" ? "previous" : "next");
     if (!button) return;
