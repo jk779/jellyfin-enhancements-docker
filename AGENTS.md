@@ -23,9 +23,15 @@ explicitly requested. Prefer separate injection files for independent features.
   target service. Verify the actual deployment environment before running those
   operations. `make caddy-reload` only reloads configuration already inside its
   configured container; it does not copy local files or update the image.
-- Injected scripts are cached for one hour by Caddy. Account for browser caching
-  when validating a deployment. Distinguish local checks, temporary browser
-  injection, and deployed behavior in reports.
+- Caddy serves `/web/`, `/web/index.html`, and `/inject/*` with a strict
+  no-cache response (`no-store, no-cache, must-revalidate, max-age=0`, plus
+  `Pragma: no-cache` and `Expires: 0`) and removes validators so deployed
+  entrypoint and injected-script changes are fetched on each request. Other
+  Jellyfin assets, API responses, and media keep their normal caching. A
+  browser response cached under the old one-hour policy must contact the server
+  once before this policy can apply; use a full page reload after deployment
+  because SPA navigation does not reload the HTML entrypoint. Distinguish local
+  checks, temporary browser injection, and deployed behavior in reports.
 
 ## Feature map and compatibility contracts
 
