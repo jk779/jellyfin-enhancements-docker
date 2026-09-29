@@ -19,7 +19,7 @@
     }
 
     #searchPage .emby-scroller {
-      padding: 0 2.5% !important;
+      padding: 0 max(2.5%, env(safe-area-inset-right)) 0 max(2.5%, env(safe-area-inset-left)) !important;
     }
   `);
 })();
