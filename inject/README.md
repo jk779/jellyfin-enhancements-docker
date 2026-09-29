@@ -8,6 +8,8 @@ Playlist membership is read from every accessible playlist page. Additions use t
 
 `touch-thumbnail-play.js` changes the native action on non-folder video thumbnails from `link` to `resume`. Jellyfin's own shortcut handler then starts the normal playback flow, including resume position and playback navigation, while the title link remains available for the details view. Nested controls and dynamically rendered cards retain their native behavior.
 
+`video-card-widescreen.js` changes non-folder video cards from Jellyfin's square card and padder classes to its backdrop classes, giving thumbnails a 16:9 layout while retaining native image, title, and playback behavior.
+
 These scripts are loaded by the Caddy HTML replacement. Caddy serves the HTML
 entrypoints and `/inject/*` with strict no-cache headers (`no-store, no-cache,
 must-revalidate, max-age=0`, `Pragma: no-cache`, and `Expires: 0`) and removes
